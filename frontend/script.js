@@ -1,6 +1,6 @@
 async function callAPI() {
   const response = await fetch(
-    "http://localhost:5000/api/hello"
+    "backenddeb-h0fnfbg9esc0f4h3.centralindia-01.azurewebsites.net"
   );
   const data = await response.json();
   document.getElementById("result").innerText =
