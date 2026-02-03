@@ -10,34 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # -------- STEP 1: Checkout code --------
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # -------- STEP 2: Zip Backend --------
-    - name: Zip Flask Backend
-      run: |
-        cd backend
-        zip -r ../backend.zip .
-
-    # -------- STEP 3: Deploy Backend --------
-    - name: Deploy Flask Backend via Kudu
+    # -------- BACKEND DEPLOYMENT --------
+    - name: Deploy Flask Backend
       uses: azure/webapps-deploy@v2
       with:
         app-name: Backenddeb
         publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
-        package: backend.zip
+        package: backend
 
-    # -------- STEP 4: Zip Frontend --------
-    - name: Zip Frontend
-      run: |
-        cd frontend
-        zip -r ../frontend.zip .
-
-    # -------- STEP 5: Deploy Frontend --------
-    - name: Deploy Frontend via Kudu
+    # -------- FRONTEND DEPLOYMENT --------
+    - name: Deploy Frontend
       uses: azure/webapps-deploy@v2
       with:
         app-name: frontendweb1
         publish-profile: ${{ secrets.AZURE_FRONTEND_PUBLISH_PROFILE }}
-        package: frontend.zip
+        package: frontend/*
+
