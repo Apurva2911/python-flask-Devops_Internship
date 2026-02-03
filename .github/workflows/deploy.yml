@@ -1,64 +1,40 @@
-name: CI/CD Flask SPA to Azure
+name: Flask CI/CD Demo
 
+# Run this workflow on push or PR to main
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  build-and-deploy:
+  build-and-run:
     runs-on: ubuntu-latest
 
     steps:
-    # -------- STEP 1: Checkout repo --------
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # Step 1: Checkout repo
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    # -------- STEP 2: Debug: List all files --------
-    - name: List all repo files
-      run: |
-        pwd
-        ls -R
+      # Step 2: Setup Python 3.11
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    # -------- STEP 3: Zip Backend --------
-    - name: Zip Flask Backend
-      run: |
-        # Detect if files are in backend/ folder or root
-        if [ -f backend/app.py ] && [ -f backend/requirements.txt ]; then
-          echo "Backend files found in backend/ folder"
-          cd backend
-          zip -r ../backend.zip .
-        elif [ -f app.py ] && [ -f requirements.txt ]; then
-          echo "Backend files found in root folder"
-          zip -r backend.zip app.py requirements.txt
-        else
-          echo "ERROR: Backend files not found!"
-          exit 1
-        fi
+      # Step 3: Install backend dependencies
+      - name: Install dependencies
+        run: |
+          set -e  # Stop if any command fails
+          pip install --upgrade pip
+          pip install -r backend/requirements.txt
 
-    # -------- STEP 4: Deploy Backend via Kudu --------
-    - name: Deploy Flask Backend
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: Backenddeb
-        publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
-        package: backend.zip
-
-    # -------- STEP 5: Zip Frontend --------
-    - name: Zip Frontend
-      run: |
-        if [ -d frontend ]; then
-          cd frontend
-          zip -r ../frontend.zip .
-        else
-          echo "No frontend folder found, skipping frontend zip"
-        fi
-
-    # -------- STEP 6: Deploy Frontend via Kudu --------
-    - name: Deploy Frontend
-      if: ${{ github.event.repository }}  # optional, deploy only if zip exists
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: frontendweb1
-        publish-profile: ${{ secrets.AZURE_FRONTEND_PUBLISH_PROFILE }}
-        package: frontend.zip
+      # Step 4: Run Flask app
+      - name: Run Flask Backend
+        run: |
+          set -e
+          export FLASK_APP=backend/app.py
+          export FLASK_ENV=development
+          echo "Starting Flask backend..."
+          flask run --host=0.0.0.0 --port=8000 &
+          sleep 10  # keep workflow alive to show logs
