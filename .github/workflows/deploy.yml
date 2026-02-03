@@ -10,33 +10,53 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # -------- STEP 1: Checkout code --------
+    # -------- STEP 1: Checkout repo --------
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # -------- STEP 2: Zip Backend --------
+    # -------- STEP 2: Debug: List all files --------
+    - name: List all repo files
+      run: |
+        pwd
+        ls -R
+
+    # -------- STEP 3: Zip Backend --------
     - name: Zip Flask Backend
       run: |
-        zip -r backend.zip app.py requirements.txt
+        # Detect if files are in backend/ folder or root
+        if [ -f backend/app.py ] && [ -f backend/requirements.txt ]; then
+          echo "Backend files found in backend/ folder"
+          cd backend
+          zip -r ../backend.zip .
+        elif [ -f app.py ] && [ -f requirements.txt ]; then
+          echo "Backend files found in root folder"
+          zip -r backend.zip app.py requirements.txt
+        else
+          echo "ERROR: Backend files not found!"
+          exit 1
+        fi
 
-    # -------- STEP 3: Deploy Backend --------
-    - name: Deploy Flask Backend via Kudu
+    # -------- STEP 4: Deploy Backend via Kudu --------
+    - name: Deploy Flask Backend
       uses: azure/webapps-deploy@v2
       with:
         app-name: Backenddeb
         publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
         package: backend.zip
 
-    # -------- STEP 4: Zip Frontend --------
+    # -------- STEP 5: Zip Frontend --------
     - name: Zip Frontend
-      if: ${{ github.event.repository }}  # optional check if frontend exists
       run: |
-        cd frontend
-        zip -r ../frontend.zip .
+        if [ -d frontend ]; then
+          cd frontend
+          zip -r ../frontend.zip .
+        else
+          echo "No frontend folder found, skipping frontend zip"
+        fi
 
-    # -------- STEP 5: Deploy Frontend --------
-    - name: Deploy Frontend via Kudu
-      if: ${{ github.event.repository }}  # optional check if frontend exists
+    # -------- STEP 6: Deploy Frontend via Kudu --------
+    - name: Deploy Frontend
+      if: ${{ github.event.repository }}  # optional, deploy only if zip exists
       uses: azure/webapps-deploy@v2
       with:
         app-name: frontendweb1
